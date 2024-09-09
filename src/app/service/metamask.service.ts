@@ -17,6 +17,13 @@ export class MetamaskService {
   isConnected = signal(false);
   address = signal('');
   balance = signal('');
+  currentNetwork = signal<{ id: string; name: string } | null>(null);
+
+  supportedNetworks = [
+    { id: '0x1', name: 'Ethereum Mainnet' },
+    { id: '0x14a34', name: 'Base Sepolia' },
+    { id: '0x4268', name: 'Ethereum Holesky' },
+  ];
 
   constructor() {
     this.checkMetaMaskInstallation();
@@ -44,6 +51,32 @@ export class MetamaskService {
       return true;
     } catch (error) {
       console.error('Error al conectar con MetaMask:', error);
+      return false;
+    }
+  }
+
+  async changeNetwork(networkId: string): Promise<boolean> {
+    if (!this.web3 || !window.ethereum) {
+      return false;
+    }
+
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: networkId }],
+      });
+
+      const network = this.supportedNetworks.find((n) => n.id === networkId);
+      if (network) {
+        this.currentNetwork.set(network);
+        this.updateBalance();
+      } else {
+        this.currentNetwork.set(null);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error al cambiar de red:', error);
       return false;
     }
   }
